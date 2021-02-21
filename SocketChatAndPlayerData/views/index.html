@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Socket Chat and Activity</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js" integrity="sha512-WIklPM6qPCIp6d3fSSr90j+1unQHUOoWDS4sdTiR8gxUTnyZ8S2Mr8e10sKKJ/bhJgpAa/qG068RDkg6fIlNFA==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/addons/p5.sound.js" integrity="sha512-KxzVm+IqxNNq0+SzT/zzd5PHxY4LPrN+v5gZJ6+JKqjeU3Cr4y/djAg5eNlKDWurn1SeKZpql/yeOMWblMSzOg==" crossorigin="anonymous"></script>
+<!-- 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.67/Tone.js" integrity="sha512-W3WpZZBLWKA4JxKtWzGqq2wZwWb/eYKINiCwDQIjeZqdzXhNAUNoSEllU2SkRpGIzCZGCZy55IczGAgIACXMBg==" crossorigin="anonymous"></script> -->
+    <link rel="stylesheet" href="style.css">
+    <script src="sketch.js"></script>
+</head>
+
+<body>
+    <div id="chatContainer">
+        <div id="me">
+            <p id="name"></p>
+            <textarea id="chatInput"></textarea>
+    
+            <!-- <button id="sendChat">
+                Send Message
+            </button> -->
+        </div>
+    </div>
+    <!-- <ul id="messages"></ul>
+    <form action="">
+        <input id="m" autocomplete="off" /><button>Send</button>
+    </form> -->
+
+
+    <!-- <script>
+        $(function () {
+            var socket = io();
+            $('form').submit(function (e) {
+                e.preventDefault(); // prevents page reloading
+                socket.emit('chat message', $('#m').val());
+                $('#m').val('');
+                return false;
+            });
+            socket.on('chat message', function (msg) {
+                $('#messages').append($('<li>').text(msg));
+            });
+        });
+    </script> -->
+</body>
+
+</html>
