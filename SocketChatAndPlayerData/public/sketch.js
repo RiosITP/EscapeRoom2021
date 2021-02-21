@@ -91,9 +91,8 @@ function setup() {
               let div = createDiv();
               div.class('otherchats');
               div.id(updatedPlayers[i].name);
-              div.html("<div id="+updatedPlayers[i].name+'>'+
-              '<'+"p id=" +"name"+">"+ updatedPlayers[i].name+ "</p>"+
-              "<textarea id="+"chatInput"+"></textarea>"+ "</div>");
+              div.html('<'+"p id=" +"name"+">"+ updatedPlayers[i].name+ "</p>"+
+              "<div id="+"chatInput"+"></div>");
               ctnr.child(div);
               //updatedPlayers[i].messagebox = true;
               players.push(updatedPlayers[i]);
@@ -139,8 +138,12 @@ function setup() {
  
     });//update players end
 
-    socket.on('msg', (message) =>{ 
-      //console.log(message);
+    socket.on('msg', (newInfo) =>{ 
+      let talker = select('#'+newInfo.sender);
+      if(talker){
+        let box = select('#chatInput',talker);
+        box.html(newInfo.message);
+      }
     });
 }
 
@@ -204,7 +207,11 @@ function keyMovers() {
 
       chat = chatInpt.value();
       if(chat != pchat){
-        socket.emit('msg', chat);
+        let info = {
+          message: chat,
+          sender: me.name
+        }
+        socket.emit('msg', info);
         pchat = chat;
       }
 
