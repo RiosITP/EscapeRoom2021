@@ -87,8 +87,9 @@ io.sockets.on('connect', (socket) => {
       players = updatedPlayersStatus;
     });
 
-    socket.on('msg',(message)=>{
-      socket.broadcast.emit('msg', message );
+    socket.on('msg',(info)=>{
+
+      socket.broadcast.emit('msg', info);
 
     });
 
