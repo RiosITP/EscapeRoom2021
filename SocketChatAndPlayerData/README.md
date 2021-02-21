@@ -1,4 +1,4 @@
-[WIP live versions can be found here](https://abaft-sphenoid-numeric.glitch.me) 
+[WIP live version can be found here](https://abaft-sphenoid-numeric.glitch.me) 
 
 This project uses the Glitch Express template, go see their info below
 
