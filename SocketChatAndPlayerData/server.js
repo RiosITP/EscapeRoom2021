@@ -4,11 +4,8 @@
 // init project
 const express = require("express"); 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
-
 const socket = require("socket.io"); 
-
 const INDEX = "views";
 
 app.use(express.static("public"));
@@ -32,31 +29,31 @@ io.on("connect", socket => {
 
   //disconnected socket
   socket.on("disconnect", () => {
-    //  let updtdclients = io.sockets.clients();
-    let updtdclients = io.sockets.sockets;
-    //console.log(updtdclients);
-    let connectedds = updtdclients.keys();
-    let connectedIds = Array.from(connectedds);
-    //console.log("connected ids:");
-    //console.log(connectedIds); //map iterator
 
+    let updtdclients = io.sockets.sockets; // all currently connected sockets, returns Map Object
+    let connectedds = updtdclients.keys(); // get the keys, which are the socket ids
+    let connectedIds = Array.from(connectedds); // create an array of the socket ids
+  
+    
     if (players.length > 0) {
-      //console.log("check against the players");
+      // look at all players in our players array (it should still contain the disconnected socket)
       for (let i = 0; i < players.length; i++) {
+        // assume disconnection
         let dcontd = true;
-        //console.log("player " + i);
+        // for each player look through the currently connected ids
         for (let j = 0; j < connectedIds.length; j++) {
-          // console.log("check connections");
+          // if theres a match then there is still a connection
           if (players[i].id == connectedIds[j]) {
             dcontd = false;
           }
         }
+        // if we didnt find a player amongst the currently connected ids, then delete that player from the player array
         if (dcontd) {
           console.log(players[i].name + " with id: " + players[i].id + " has disconnected");
           players.splice(i, 1);
+          // update all other clients when a player leaves
           io.emit("playerLeft", players);
         }
-        //console.log(players);
       }
     }
   });
