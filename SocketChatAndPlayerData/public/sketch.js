@@ -1,323 +1,284 @@
-let socket;
-let fontSize = 16;
-let players = [];
-let messageboxes = [];
+let socket; 
+let fontSize = 12;
+let players = []; // array to hold player info
 let startbutton;
-let stage = 0;
-let me ;
+let stage = 0; // variable to control canvas welcome stage
+let me;
 let speed = 2;
 let inpt;
-let newname = ""; 
+let newname = "";
 let chatDiv;
 let chatName;
 let chatInpt;
 let chatBtn;
 let pchat;
-let chat='';
+let chat = '';
 let chatContainer;
+let mediv;
+let canv;
 
 function setup() {
-    createCanvas(1280,800);
-   
-    inpt = createInput("Enter Your Name"); 
-    inpt.position(width/2,(height/2)-20);
-    inpt.mousePressed(clearName);
+  // fit canvas to the client's window, but make room for a chatbox below
+  canv = createCanvas(windowWidth, windowHeight - 80); 
+  canv.position(0, 0);
+  canv.style('z-index', -1); // probably not necessary
 
-    chatName= select('#name');
-    chatDiv = select('#me');
-    chatInpt = select('#chatInput');
-    chatContainer = select('#chatContainer');
+  // make a place for the visitor to enter their name
+  inpt = createInput("Enter Your Name");
+  inpt.position(width / 4, (height / 2) - 20);
+  // clear out the pre-existing text when they click to enter their names
+  inpt.mousePressed(clearName); 
+  
+  // hide the chat container on the first stage, we'll bring it back once they enter a name
+  chatContainer = select('#chatContainer');
+  chatContainer.hide();
 
-    chatContainer.hide();
-    chatName.hide();
-    chatDiv.hide();
-    chatInpt.hide();
-   // chatBtn.hide();
+  // make the start button
+  startbutton = createButton("Start the Experience");
+  startbutton.position(width / 4, (height / 2) + 20);
+  // start the room if they click and have entered a name (i guess its not really much of a game though...)
+  startbutton.mousePressed(beginGame);
 
-    startbutton = createButton("Start the Experience");
-    startbutton.position(width/2,height/2);
-    startbutton.mousePressed(beginGame);
 
-    textSize(fontSize);
-
-    pmouseX= width/2;
-    pmouseY= height/2;
-    //socket = io.connect('https://jet-flowery-lemongrass.glitch.me');
-    socket = io.connect('localhost:3000');
+  textSize(fontSize);
+  // variables to keep track of player movement
+  pmouseX = width / 2;
+  pmouseY = height / 2;
     
-    socket.on('connect',()=>{
-      me = {
-        id: socket.id,
-        name: "me",
-        x : width/2,
-        y : height/2,
-        message:'',
-        size: 20,
-        messagebox: false
+  // connect socket to your server.  
+  // When running locally, CHANGE TO 'localhost:PORTNUMBER' (enter your actual port number in place of the word PORTNUMBER)
+  socket = io.connect('https://abaft-sphenoid-numeric.glitch.me');
+
+  // when a socket connects generate some player info. This happens before they enter a name or click
+  socket.on('connect', () => {
+    me = {
+      id: socket.id,
+      name: "me",
+      x: width / 2,
+      y: height / 2,
+      message: " ",
+      size: 20,
+      messagebox: false
+    }
+  });
+
+  // when the server tells us a player has moved, find them in the client side array and update their location
+  socket.on('movePlayers', (info) => {
+    for (let i = 0; i < players.length; i++) {
+      if (players[i].id == info.id) {
+        players[i].x = info.x;
+        players[i].y = info.y;
       }
-    });
-
-
-    socket.on('movePlayers',()=>{
-      console.log("moving");
-    });
-
-
-    socket.on('updatePlayers', (updatedPlayers) =>{ 
-        // array comes in, me is still false
-        console.log("new player change event")
-        console.log(updatedPlayers);
-        console.log("existing players")
-        console.log(players);
-      for(let i=0;i < updatedPlayers.length; i++){
-        //if(!updatedPlayers[i].messagebox){
-          // if messagbox flag is false
-          // double check that theplayer is new, and //also not a duplicate of myself
-          let newPlayer = true;
-          
-          for(let j = 0; j< players.length ; j++){
-            if (updatedPlayers[i].id == players[j].id){
-              newPlayer = false;
-            }
-            else if (updatedPlayers[i].id == me.id){
-              newPlayer = false;
-            }
-            // else if(updatedPlayers[i].messagebox){
-            //   newPlayer = false;
-            // }
-            else if(newPlayer){
-              if(select('#'+updatedPlayers[i].name) == null){
-              let ctnr = select('#chatContainer');
-              let div = createDiv();
-              div.class('otherchats');
-              div.id(updatedPlayers[i].name);
-              div.html('<'+"p id=" +"name"+">"+ updatedPlayers[i].name+ "</p>"+
-              "<div id="+"chatInput"+"></div>");
-              ctnr.child(div);
-              //updatedPlayers[i].messagebox = true;
-              players.push(updatedPlayers[i]);
-              console.log("player added");
-              console.log(players);
-              }
-            }
-          }
-        //}
-      }
-        // check for disconnected players
-     
-      for(let i = 0; i< players.length ; i++){
-        let disct = true;
-        for(let j=0; j < updatedPlayers.length; j++){
-          if(players[i].id == updatedPlayers[j].id){
-            disct = false;
-            console.log("still there")
-          }
-        }
-        if(disct){
-          console.log("this one should go");
-          if(players[i].id != me.id){
-            let divdel = select('#'+players[i].name);
-            console.log(divdel);
-
-            if(divdel){
-              console.log(divdel);
-              players.splice(i,1);
-              divdel.remove();
-              console.log("players after remove :");console.log(players);
-            }
-          }
-          
-          
+    }
+  });
+  // when the server tells us a player has left the server is sending an array of all the updated players socket id's which are stored on the server
+  socket.on('playerLeft', (updatedPlayersd)=>{
+    console.log("players");
+    console.log(players);
+    console.log("updatedPlayersd");
+    console.log(updatedPlayersd);
+      
+    // look for a match in the client players array
+    // loop through the client players array
+    for(let i = 0; i< players.length ;i++){
+      let stay = false;
+      // for each player on the client side. see if there is a match with the incoming array
+      for(let j = 0; j< updatedPlayersd.length ;j++){
+         // if thers a match, that player can stay
+        if(players[i].id == updatedPlayersd[j].id){
+          stay = true;
         }
       }
-
-      // players = updatedPlayers;
-      // console.log("players bottom of event ")
-      // console.log(players);
-      //socket.emit('updatePlayerStatus',players);
- 
-    });//update players end
-
-    socket.on('msg', (newInfo) =>{ 
-      let talker = select('#'+newInfo.sender);
-      if(talker){
-        let box = select('#chatInput',talker);
-        box.html(newInfo.message);
+    //if there are no matches
+    if (!stay){
+        //console.log(players[i].name + " with id: " +players[i].id+" is disconnected" )
+        players.splice(i,1);
       }
-    });
-}
+    }
+  });
+    
+    // when the server tells us a new player connected, the server is sending an array of all the updated players which are stored on the server
+  socket.on('updatePlayers', (updatedPlayers) => {
+    // loop through all the incoming players
+      
+    for (let i = 0; i < updatedPlayers.length; i++) {
+      // double check that theplayer is new, and also not a duplicate of the client (myself)
+      let newPlayer = true;
+       
+      //for each incoming player (server), loop through the existing client side players
+      for (let j = 0; j < players.length; j++) {
+           // if we find a match, the player is not actually new
+           if (updatedPlayers[i].id == players[j].id) {
+              newPlayer = false;
+            }
+           // if the player is the same as this client the player is not actually new
+           if (updatedPlayers[i].id == me.id) {
+              newPlayer = false;
+            }  
+      }
+      // if the player is actually new, add them to the client side array so we can draw them later
+      if (newPlayer) {
+          players.push(updatedPlayers[i]);
+          console.log("added" + updatedPlayers[i]);
+          console.log(players);
+        }
+    }
+  });
+   
+  // when another client sends a message
+  socket.on('msg', (newInfo) => { // server is only sending info about the one client, not the entire array
+    // loop through the players array and update the message for that particular client.
+    for (let i =0; i < players.length ; i++) {
+
+      if (players[i].id == newInfo.sender) {
+        players[i].message = newInfo.message;
+        // console.log("message from: ");
+        // console.log(newInfo);
+      }
+    }
+  });
+}// end of Setup
+
 
 function draw() {
-  if(stage == 1){
+  if (stage == 1) {
     background(255);
+    keyMovers();
+    drawOthers();
+    chatWithOthers();
+
     noStroke();
     fill(234, 34, 123);
-    ellipse(me.x, me.y, 20, 20);
-    keyMovers();
+    text(me.name + ": " + me.message, me.x-me.size, me.y - me.size)
+    ellipse(me.x, me.y, me.size, me.size);
   }
-}   
+}
 
-function keyMovers() {
-  if(keyIsDown(LEFT_ARROW)|| keyIsDown(65)){
-   me.x -= speed;
-  }
-  if(keyIsDown(UP_ARROW)|| keyIsDown(87)){
-    me.y -= speed;
-  }
-  if(keyIsDown(RIGHT_ARROW)|| keyIsDown(68)){
-  
-    me.x += speed;
-  }
-  if(keyIsDown(DOWN_ARROW)|| keyIsDown(83)){
-    me.y += speed;
-  }
+function chatWithOthers() {
+  if (stage == 1) {
 
-  if(me.x < 0 - me.size/2){
-    me.x = width;
+    chat = chatInpt.value();
+    if (chat != pchat) {
+      let info = {
+        message: chat,
+        sender: me.id
+      }
+      me.message = chat;
+      socket.emit('msg', info);
+      pchat = chat;
+    }
   }
-  if(me.x > width + me.size/2){
-    me.x = 0;
-  }
-  if(me.y < 0 - me.size/2){
-    me.y = height;
-  }
-  if(me.y > height + me.size/2){
-    me.y = 0;
-  }
+}
 
-  if(players.length > 0){
-    for(let i = 0; i< players.length ; i++){
-      if(players[i].id != socket.id){
+function drawOthers() {
+  if (players.length > 0) {
+    for (let i = 0; i < players.length; i++) {
+      if (players[i].id != socket.id) {
         noStroke();
-        fill(0,255,0);
-        ellipse(players[i].x, players[i].y,20,20)
-        text(players[i].name, players[i].x, players[i].y-15);
+        fill(0, 125, 125);
+        ellipse(players[i].x, players[i].y, 20, 20)
+        text(players[i].name + ": " + players[i].message, players[i].x- players[i].size, players[i].y - players[i].size);
       }
     }
   }
+}
 
-  if(stage == 1){
-    if(socket){
+function keyMovers() {
+
+  if (keyIsDown(LEFT_ARROW)) {
+    me.x -= speed;
+  }
+  if (keyIsDown(UP_ARROW)) {
+    me.y -= speed;
+  }
+  if (keyIsDown(RIGHT_ARROW)) {
+
+    me.x += speed;
+  }
+  if (keyIsDown(DOWN_ARROW)) {
+    me.y += speed;
+  }
+
+
+// if my character goes off screen teleport them to the opposite side (like pacman)
+  if (me.x < 0 - me.size / 2) {
+    me.x = width;
+  }
+  if (me.x > width + me.size / 2) {
+    me.x = 0;
+  }
+  if (me.y < 0 - me.size / 2) {
+    me.y = height;
+  }
+  if (me.y > height + me.size / 2) {
+    me.y = 0;
+  }
+
+  if (stage == 1) {
+     // if we are in the room and there is a connection, update my position to everyone else
+    if (socket) {
       let d = {
         id: socket.id,
-        name: newname,  
+        name: me.name,
         x: me.x,
         y: me.y,
       }
 
-      chat = chatInpt.value();
-      if(chat != pchat){
-        let info = {
-          message: chat,
-          sender: me.name
-        }
-        socket.emit('msg', info);
-        pchat = chat;
-      }
-
       socket.emit('move', d);
 
-      }else{
-        console.log("not sending")
-      }
+    } else {
+      console.log("not sending")
+    }
   }
 }
 
-function beginGame(){
+function beginGame() {
+  let ctntr = select('#chatContainer')
   newname = inpt.value();
   me.name = newname;
 
-  if(newname == "Enter Your Name"|| newname == ""){
+  mediv = createDiv();
+  mediv.class('otherchats');
+  mediv.id('me');
+  mediv.html('<' + "section id=" + "name" + ">" + me.name + ":  (Type below, text is shown in realtime)" + "</section>" +
+    "<textarea id=" + "chatInput" + "></textarea>");
+  ctntr.child(mediv);
+  ctntr.position(10, height - 30);
+
+  if (newname == "Enter Your Name" || newname == "") {
     console.log("enter a new name");
   }
-  else{
+  else {
     let data = {
-      id: socket.id,  
+      id: socket.id,
       name: newname,
-      x : mouseX,
-      y : mouseY,
+      x: mouseX,
+      y: mouseY,
       message: '',
       size: 20,
       messagebox: false
     }
-    players[0]= data;
-    if(socket){
+    players.push(data);
+    console.log(players)
+    if (socket) {
+      console.log("sent my info to the server")
       socket.emit('begingame', data);
-      //console.log("sending "+mouseX +" ," +mouseY+  " from: "+socket.id);
-      //console.log(socket);
-    }else{
+    } else {
       console.log("not sending");
     }
     stage = 1;
+    chatInpt = select('#chatInput')
     startbutton.remove();
     inpt.remove();
     chatContainer.show();
-    chatName.html(me.name);
-    chatName.show();
-    chatDiv.show();
     chatInpt.show();
-    //chatBtn.show();
   }
 }
 
-function clearName(){
+function clearName() {
   inpt.value('');
-} 
+}
 
- //     if(players.length != updatedPlayers.length){
-        
-  //       if(players.length < updatedPlayers.length){
-          
-  //         for(let i = 0 ; i<updatedPlayers.length ; i++){ 
-  //           let found = false;
-  //           for(let j = 0 ; j<players.length ; j++){ 
-  //             if(me.id != updatedPlayers[i].id && updatedPlayers[i].id == players[j].id){
-  //               found = true;
-                
-  //             // messageboxes[updatedPlayers.length-1] = div;
-  //           }
-  //           if(!found){
-  //             let ctnr = select('#chatContainer')
-  //             let div = createDiv();
-  //             div.class('otherchats');
-  //             div.id(updatedPlayers[updatedPlayers.length-1].name);
-  //             div.html("<div id="+ updatedPlayers[i].name+'>'+
-  //             '<'+"p id=" +"name"+">"+ updatedPlayers[i].name + "</p>"+
-  //             "<textarea id="+"chatInput"+"></textarea>"+ "</div>")
-  //             ctnr.child(div);
-  //           }
-  //         }
-  //       }
-  //         players = updatedPlayers;
-  //       }
-  //   if(players.length > updatedPlayers.length){
-      
-  //     for(let i=0; i < players.length ; i++){
-  //       let found = false;
-  //       for(let j=0; j < updatedPlayers.length ; j++){
-  //         if(players[i].id == updatedPlayers[j].id){
-  //           found = true;
-  //         }
-  //       }
-  //       if(!found){
-  //         //splice that from the array
-  //         // for(let j=0; j < messageboxes.length ; j++){
-  //         //   if(messageboxes[j].id == players[i].id){
-  //         //     messageboxes[j].remove();
-  //         //     messageboxes.splice(j,1);
-  //         //   }
-  //         // }
-  //       }
-  //     }
-  //     players = updatedPlayers;
-
-  //   }
-  //   // for(let i=0; i < messageboxes.length ; i++){
-  //   //   if(players[i].id != me.id){
-  //   //     messageboxes[i].html(
-  //   //       "<div id="+ players[i].name+'>'+
-  //   //       '<'+"p id=" +"name"+">"+ players[i].name + "</p>"+
-  //   //       "<textarea id="+"chatInput"+"></textarea>"+ "</div>");
-  //   //   }
-  //   // }
-  // }
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight-80);
+}
